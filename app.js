@@ -3,11 +3,11 @@
    데이터 = models.js / 계산 = calc.js / 이 파일 = 입력·그래프·저장·출력 (계산식은 여기 두지 말 것)
    섹션: 상수 → 유틸 → 상태 → 그리기 → 입력 → 저장·공유 → 초기화
    ══════════════════════════════════════════════════════════════ */
-const APP_VERSION = '20261120k';
+const APP_VERSION = '20261120l';
 const C = AriesCalc, D = ARIES2;
 const TARGETS = [12, 18, 24, 36, 48];
 const SAVE_KEY = 'urolink_aries2_roi_saved_v3';
-const DEFAULT_PAT = { skin: 4, nod: 3 };           // 상담 예시 값(처음 화면용)
+const DEFAULT_PAT = {};                            // 모든 모델 월 신규 환자 0명으로 시작(초기화도 동일). 값은 상담 중 입력
 const PAY_LABEL = { prepaid: '선결제', session: '회차별 결제', installment: '분할 결제' };
 
 /* ── 유틸 ── */
@@ -352,8 +352,6 @@ function refreshModelCalc() {
     const i = +row.dataset.i, m = S.models[i], c = cfg.models[i]; if (!m) return;
     row.querySelector('.m-calc').textContent = comma(c.shots) + '타 × ' + c.sess + '회 · 간격 ' + ivText(m) + ' · 회당 ' + comma(C.sessionFee(c, cfg)) + '원 · 프로그램 ' + comma(C.programFee(c, cfg)) + '원';
   });
-  const cnt = g => S.models.filter(m => m.pat > 0 && (m.custom || metaOf(m).grp === g)).length;
-  $('cntOb').textContent = cnt('ob') ? cnt('ob') + '종 선택' : ''; $('cntUro').textContent = cnt('uro') ? cnt('uro') + '종 선택' : '';
 }
 function addModel() {
   S.models.push({ k: 'c' + Date.now(), custom: true, name: '', sh: 1000, area: 0, se: 4, iv: D.fallbackInterval, pat: 0, fee: null });
