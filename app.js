@@ -3,7 +3,7 @@
    데이터 = models.js / 계산 = calc.js / 이 파일 = 입력·그래프·저장·출력 (계산식은 여기 두지 말 것)
    섹션: 상수 → 유틸 → 상태 → 그리기 → 입력 → 저장·공유 → 초기화
    ══════════════════════════════════════════════════════════════ */
-const APP_VERSION = '20261120j';
+const APP_VERSION = '20261120k';
 const C = AriesCalc, D = ARIES2;
 const TARGETS = [12, 18, 24, 36, 48];
 const SAVE_KEY = 'urolink_aries2_roi_saved_v3';
@@ -342,8 +342,8 @@ function rowHtml(m, i) {
   return '<div class="mrow' + (m.pat > 0 ? ' on' : '') + '" data-i="' + i + '"><div class="mtop">' + head
     + '<div class="step"><button data-a="dec" aria-label="줄이기">−</button><input class="m-pat" inputmode="numeric" value="' + m.pat + '"><button data-a="inc" aria-label="늘리기">+</button></div></div>'
     + '<div class="msub m-calc"></div>'
-    + '<details class="mdet"><summary>프로토콜 · 조건 조정</summary><div class="mdet-in">' + proto + '<div class="g2">' + adj
-    + '<label class="fld"><span>타당 수가 <u>원</u></span><input class="m-fee" inputmode="decimal" placeholder="공통 적용" value="' + (m.fee == null ? '' : m.fee) + '"></label></div></div></details></div>';
+    + '<details class="mdet"><summary>프로토콜 상세 · 타수·횟수·간격</summary><div class="mdet-in">' + proto + '<div class="g2">' + adj
+    + '</div></div></details></div>';
 }
 function ivText(m) { const mt = metaOf(m); return mt && mt.iv.max == null && !mt.iv.assumed ? mt.iv.txt : (+m.iv.toFixed(1)) + '일' + (mt && mt.iv.assumed ? '(가정)' : ''); }
 function refreshModelCalc() {
@@ -390,7 +390,6 @@ function bind() {
     else if (c.contains('m-sh')) m.sh = mt ? clamp(Math.round(v), mt.shots.min, mt.shots.max) : clamp(Math.round(v), 0, 100000);
     else if (c.contains('m-se')) m.se = mt ? clamp(Math.round(v), mt.sess.min, mt.sess.max) : clamp(Math.round(v), 0, 99);
     else if (c.contains('m-iv')) m.iv = mt && mt.iv.max != null ? clamp(v, mt.iv.min, mt.iv.max) : clamp(v, 0, 365);
-    else if (c.contains('m-fee')) m.fee = el.value.trim() === '' ? null : Math.max(0, v);
     row.classList.toggle('on', m.pat > 0);
     render();
   });
@@ -429,7 +428,7 @@ function sanitize(o) {
     s.models = D.models.map(mt => {             // 프로토콜 값은 models.js 범위 안으로만 받는다(범위 밖·고정값 변조 무시)
       const b = newModelState(mt); b.pat = 0;
       const f = o.models.find(x => x && x.k === mt.k); if (!f) return b;
-      b.pat = clamp(Math.round(num(f.pat)), 0, 999); b.fee = nn(f.fee, 0, 1e5);
+      b.pat = clamp(Math.round(num(f.pat)), 0, 999); b.fee = null;   // 수가는 STEP 1 의 공통 값만 사용(예전 링크의 모델별 수가는 무시)
       if (mt.shots.area) b.area = pick(f.area, mt.shots.def, mt.shots.min, 9999);
       else if (mt.shots.v == null) b.sh = Math.round(pick(f.sh, mt.shots.def, mt.shots.min, mt.shots.max));
       if (mt.sess.v == null) b.se = Math.round(pick(f.se, mt.sess.def, mt.sess.min, mt.sess.max));
@@ -438,7 +437,7 @@ function sanitize(o) {
     });
     o.models.filter(x => x && x.custom).slice(0, 8).forEach(x => s.models.push({
       k: 'c' + Math.random().toString(36).slice(2, 8), custom: true, name: String(x.name || '').slice(0, 30), sh: clamp(Math.round(num(x.sh)), 0, 100000), area: 0,
-      se: clamp(Math.round(num(x.se)), 0, 99), iv: pick(x.iv, D.fallbackInterval, 0, 365), pat: clamp(Math.round(num(x.pat)), 0, 999), fee: nn(x.fee, 0, 1e5) }));
+      se: clamp(Math.round(num(x.se)), 0, 99), iv: pick(x.iv, D.fallbackInterval, 0, 365), pat: clamp(Math.round(num(x.pat)), 0, 999), fee: null }));
   }
   s.solo = clamp(Math.round(num(o.solo)), 0, s.models.length - 1);
   return s;
