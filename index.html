@@ -8,7 +8,7 @@
 <title>Aries 2 ROI 계산기</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230B1220'/%3E%3Cpath d='M50 26v48M26 50h48' stroke='%2342A5F5' stroke-width='13' stroke-linecap='round'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="app.css?v=20261120o" rel="stylesheet">
+<link href="app.css?v=20261120p" rel="stylesheet">
 </head>
 <body>
 
@@ -67,10 +67,11 @@
 
     <div class="card">
       <div class="st">STEP 3. 추가 운영비</div>
-      <div class="fld"><span class="sl"><span>월 인건비 <em>(고정 운영비)</em></span><b id="laborV"></b></span>
-        <input id="labor" type="range" min="0" max="500" step="5"></div>
-      <div class="fld"><span class="sl"><span>월 유지관리비 <em>(고정 운영비)</em></span><b id="maintV"></b></span>
-        <input id="maint" type="range" min="0" max="300" step="5"></div>
+      <div class="g2">
+        <label class="fld"><span>월 인건비 <u>만원</u> <em>(전담 인력 등)</em></span><input id="labor" type="text" inputmode="numeric" data-num></label>
+        <label class="fld"><span>월 유지관리비 <u>만원</u></span><input id="maint" type="text" inputmode="numeric" data-num></label>
+      </div>
+      <div class="hint" id="opsSum" style="margin-top:-2px"></div>
       <label class="fld"><span>시술 1회당 추가 변동비 <u>원</u> <em>(회당 소모품 등 · 없으면 0)</em></span><input id="varSess" type="text" inputmode="numeric" data-num></label>
     </div>
 
@@ -249,8 +250,8 @@
   <div class="mgo">결과 보기 ▾</div>
 </div>
 
-<script src="models.js?v=20261120o"></script>
-<script src="calc.js?v=20261120o"></script>
-<script src="app.js?v=20261120o"></script>
+<script src="models.js?v=20261120p"></script>
+<script src="calc.js?v=20261120p"></script>
+<script src="app.js?v=20261120p"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
    데이터 = models.js / 계산 = calc.js / 이 파일 = 입력·그래프·저장·출력 (계산식은 여기 두지 말 것)
    섹션: 상수 → 유틸 → 상태 → 그리기 → 입력 → 저장·공유 → 초기화
    ══════════════════════════════════════════════════════════════ */
-const APP_VERSION = '20261120o';
+const APP_VERSION = '20261120p';
 const C = AriesCalc, D = ARIES2;
 const TARGETS = [12, 18, 24, 36, 48];
 const SAVE_KEY = 'urolink_aries2_roi_saved_v3';
@@ -83,7 +83,7 @@ function render() {
   $('repTitle').textContent = (S.hospital ? S.hospital + ' ' : '') + 'Aries 2 도입 경제성 분석';
   $('repSub').textContent = '장비 공급가 ' + comma(S.invest) + '원(VAT 포함) · ' + PAY_LABEL[S.payMode] + ' · ' + new Date().toLocaleDateString('ko-KR');
   $('applCost').textContent = (+R.applCost.toFixed(2)) + ' 원/타';
-  $('laborV').textContent = comma(S.labor) + '만 원'; $('maintV').textContent = comma(S.maint) + '만 원';
+  $('opsSum').textContent = '추가 고정 운영비 합계: 월 ' + won(fixed) + ' (연 ' + won(fixed * 12) + ') · 치료 건수와 상관없이 매달 드는 비용';
   $('instBox').hidden = S.payMode !== 'installment';
   $('payHint').textContent = { prepaid: '첫 방문 달에 프로그램 총액 전액을 수납한다고 가정합니다.',
     session: '치료를 시행하는 달에 회당 수가를 수납한다고 가정합니다.',
@@ -354,18 +354,17 @@ function drawAssump(cfg, R) {
 }
 
 /* ══════════════ 입력 ══════════════ */
-const NUM_FIELDS = ['fee', 'inst', 'varSess', 'invest', 'applPrice', 'applLife', 'target'];
+const NUM_FIELDS = ['fee', 'inst', 'labor', 'maint', 'varSess', 'invest', 'applPrice', 'applLife', 'target'];
 function readInputs() {
   S.hospital = $('hospital').value.trim();
   NUM_FIELDS.forEach(k => { S[k] = num($(k).value); });
   S.inst = clamp(Math.round(S.inst) || 1, 1, 24);
-  S.labor = num($('labor').value); S.maint = num($('maint').value);
+  S.labor = Math.max(0, S.labor); S.maint = Math.max(0, S.maint);
   S.solo = +$('soloSel').value || 0;
 }
 function writeInputs() {
   $('hospital').value = S.hospital || '';
   NUM_FIELDS.forEach(k => { $(k).value = k === 'fee' ? String(S[k]) : comma(S[k]); });
-  $('labor').value = S.labor; $('maint').value = S.maint;
   renderModels(); fillSolo(); chipSync();
 }
 function chipSync() { $('feeChips').querySelectorAll('button').forEach(b => b.classList.toggle('on', +b.dataset.v === +S.fee)); }
@@ -437,10 +436,9 @@ function bind() {
     el.addEventListener('input', () => { if (el.id === 'fee') chipSync(); render(); });
     if (el.hasAttribute('data-num')) {
       el.addEventListener('focus', () => setTimeout(() => el.select(), 0));
-      el.addEventListener('blur', () => { if (el.id !== 'fee') el.value = comma(num(el.value)); });
+      el.addEventListener('blur', () => { if (el.id !== 'fee') el.value = comma(Math.max(0, num(el.value))); });
     }
   });
-  $('labor').addEventListener('input', render); $('maint').addEventListener('input', render);
 
   document.addEventListener('click', e => {
     const b = e.target.closest('button.info'); if (!b) return;
