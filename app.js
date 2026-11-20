@@ -3,7 +3,7 @@
    데이터 = models.js / 계산 = calc.js / 이 파일 = 입력·그래프·저장·출력 (계산식은 여기 두지 말 것)
    섹션: 상수 → 유틸 → 상태 → 그리기 → 입력 → 저장·공유 → 초기화
    ══════════════════════════════════════════════════════════════ */
-const APP_VERSION = '20261120m';
+const APP_VERSION = '20261120n';
 const C = AriesCalc, D = ARIES2;
 const TARGETS = [12, 18, 24, 36, 48];
 const SAVE_KEY = 'urolink_aries2_roi_saved_v3';
@@ -115,9 +115,12 @@ function render() {
 
   // 히어로
   const hv = $('rPayback');
-  if (R.payback == null) { hv.textContent = pat ? '회수 불가' : '-'; hv.classList.toggle('bad', !!pat); hv.style.fontSize = '26px'; }
+  if (!pat) { hv.textContent = '환자 수를 입력해 주세요'; hv.classList.remove('bad'); hv.style.fontSize = '24px'; }
+  else if (R.payback == null) { hv.textContent = '회수 불가'; hv.classList.add('bad'); hv.style.fontSize = '30px'; }
   else { hv.textContent = mon(R.payback); hv.classList.remove('bad'); hv.style.fontSize = ''; }
-  $('rPaybackSub').textContent = R.payback == null ? '' : '초기 투자 ' + comma(S.invest) + '원이 월별 누적 현금흐름으로 0원을 넘는 시점입니다.';
+  $('rPaybackSub').textContent = !pat ? '치료 모델의 월 신규 환자 수를 입력하면 계산됩니다 · 월별 누적 현금흐름 기준'
+    : R.payback == null ? '월별 누적 현금흐름 기준 · 120개월(10년) 안에는 장비 공급가 ' + comma(S.invest) + '원(VAT 포함)을 회수하지 못하는 조건입니다'
+    : '월별 누적 현금흐름 기준 · 장비 공급가 ' + comma(S.invest) + '원(VAT 포함)';
   const g = $('rGoal');
   if (!pat) g.textContent = '';
   else if (R.payback != null && R.payback <= T) { g.className = 'goal ok'; g.textContent = '✔ 목표 ' + T + '개월 달성 (' + (+(T - R.payback).toFixed(1)) + '개월 앞서 회수)'; }
@@ -137,9 +140,10 @@ function render() {
   setKpi('rAfter', won(R.afterFixed[st]), R.afterFixed[st]);
   $('mbPay').textContent = R.payback == null ? (pat ? '회수 불가' : '-') : mon(R.payback).split(' ')[0];
   $('mbMon').textContent = pat ? won(R.afterFixed[st]) : '-';
-  $('steadyNote').innerHTML = pat ? '안정기는 <b>' + st + '개월차</b> 기준입니다(그 이전에는 치료·수납이 쌓이는 중이라 값이 다릅니다). 교체비 상당액은 손익용 적립이고, 실제 교체 현금지출 '
+  $('steadyNote').innerHTML = pat ? '위 월 단위 지표는 환자 수가 일정하게 유지되는 <b>안정기(' + st + '개월차 기준)</b> 가정입니다. 그 이전에는 치료·수납이 쌓이는 중이라 값이 다릅니다. 교체비 상당액은 손익용 적립이고, 실제 교체 현금지출 '
     + (R.firstRepl ? '<b>' + comma(S.applPrice) + '원</b>은 <b>' + R.firstRepl + '개월차</b>에 발생합니다(회수기간 계산에 반영됨).' : '은 120개월 안에는 발생하지 않습니다.') : '';
 
+  drawTips(cfg, R, pat);
   drawReverse(cfg, R, T);
   drawCharts(R, T);
   drawShare(cfg, R);
@@ -148,13 +152,73 @@ function render() {
 
   $('fine').innerHTML = '<ul style="padding-left:18px;margin:0">'
     + '<li><b>프로그램 계약 총액</b>은 계약 기준 금액, <b>시술 매출</b>은 실제 치료한 달의 매출, <b>실제 수납액</b>은 결제 방식에 따라 들어온 현금으로 서로 다릅니다.</li>'
-    + '<li><b>공헌이익</b>은 시술 매출에서 변동비(교체비 상당액·회당 추가 변동비)를 뺀 값이고, 고정 운영비까지 뺀 것이 <b>운영 후 공헌이익</b>입니다. 순이익이 아니며 세금·감가상각 등은 반영하지 않았습니다.</li>'
+    + '<li><b>월 공헌이익</b>은 시술 매출에서 변동비(교체비 상당액·회당 추가 변동비)를 뺀 값이고, 고정 운영비까지 뺀 것이 <b>월 예상 운영 잉여</b>입니다. 순이익이 아니며 세금·감가상각 등은 반영하지 않았습니다.</li>'
     + '<li>회수기간은 <b>월별 누적 현금흐름</b>(수납액 − 변동비 − 고정 운영비 − 교체 현금지출) 기준입니다. 매월 같은 수의 신규 환자가 온다고 가정한 단순 계산입니다.</li>'
     + '<li>장비 공급가·교체비는 <b>VAT 포함</b> 금액 그대로 사용했고, 수가·수납액은 병원 수납 금액 기준입니다(부가세 해당 여부는 반영하지 않음).</li>'
     + '<li>실제 병원 수익을 예측하거나 보장하지 않습니다.</li></ul>';
 }
 function setKpi(id, text, v) { const e = $(id); e.textContent = text; e.classList.toggle('gr', v > 0); e.classList.toggle('rd', v < 0); }
 function setSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
+
+
+/* ══════════════ ⓘ 설명 · 시술 매출과 실제 수납액의 차이 자동 설명 ══════════════ */
+/** 선택한 결제 방식과 월별 계산 결과(R)만으로 두 금액이 같은/다른 이유를 설명한다. 계산으로 확인되지 않는 원인은 쓰지 않는다. */
+function explainGap(R) {
+  const H = R.H, d = m => R.collect[m] - R.revenue[m], mode = PAY_LABEL[S.payMode];
+  let maxAbs = 0, last = 0, first = 0;
+  for (let m = 1; m <= H; m++) { const a = Math.abs(d(m)); if (a >= 1) { last = m; if (!first) first = m; } maxAbs = Math.max(maxAbs, a); }
+  if (maxAbs < 1) {
+    return '선택하신 결제 방식은 <b>' + esc(mode) + '</b>입니다. ' + (S.payMode === 'session'
+      ? '치료를 시행한 달에 그 치료비를 바로 받는 방식이라서, 매월 시술 매출과 실제 수납액이 같습니다.'
+      : '이 입력 조건에서는 치료하는 달과 돈을 받는 달이 같게 계산되어, 매월 시술 매출과 실제 수납액이 같습니다.');
+  }
+  let cum = 0, peak = 0, peakM = 0;
+  for (let m = 1; m <= Math.min(36, H); m++) { cum += d(m); if (Math.abs(cum) > Math.abs(peak)) { peak = cum; peakM = m; } }
+  const why = S.payMode === 'prepaid'
+    ? '선결제를 선택하셔서 환자가 첫 방문 달에 프로그램 전체 금액을 한 번에 내는데, 치료는 그 달 이후까지 이어지는 환자가 있어서 돈을 받는 시점이 치료하는 시점보다 앞섭니다.'
+    : '분할 결제(' + S.inst + '개월)를 선택하셔서 프로그램 금액을 ' + S.inst + '개월에 나누어 받기 때문에, 치료한 달과 돈이 들어오는 달이 어긋납니다.';
+  const diff = d(first);
+  let t = '선택하신 결제 방식은 <b>' + esc(mode) + '</b>입니다. ' + why
+    + '<br>예) <b>' + first + '개월차</b>: 시술 매출 ' + won(R.revenue[first]) + ', 실제 수납액 ' + won(R.collect[first]) + ' (수납액이 ' + won(Math.abs(diff)) + (diff > 0 ? ' 많음' : ' 적음') + ')';
+  if (Math.abs(peak) >= 1) t += '<br>처음 ' + Math.min(36, H) + '개월 누적으로는 수납액이 시술 매출보다 최대 ' + won(Math.abs(peak)) + (peak > 0 ? ' 앞섭니다' : ' 뒤처집니다') + ' (' + peakM + '개월차).';
+  if (last < H) t += '<br><b>' + (last + 1) + '개월차부터는</b> 매월 두 금액이 같아집니다.';
+  return t;
+}
+function drawTips(cfg, R, pat) {
+  const st = R.steadyMonth, sv = R.accrual[st] + R.extraVar[st], fixed = cfg.fixed, gap = pat ? explainGap(R) : '';
+  const lst = S.models.filter(m => m.pat > 0).map(m => esc(nameOf(m)) + ' ' + m.pat + '명');
+  const T = {
+    payback: '<b>무엇인가요?</b> 장비 공급가 ' + comma(S.invest) + '원(VAT 포함)을 병원에 남는 돈으로 모두 채우는 데 걸리는 기간입니다.'
+      + '<br><b>어떻게 계산하나요?</b> 매달 실제로 들어온 돈(실제 수납액)에서 그 달에 나간 돈(치료 변동비·추가 운영비·어플리케이터 교체비)을 뺀 금액을 매달 차곡차곡 더해, 합계가 투자금을 넘는 시점을 찾습니다.'
+      + '<br>환자가 쌓이는 처음 몇 달은 느리게 늘어납니다. 어플리케이터 교체비 ' + won(S.applPrice) + '은 ' + (R.firstRepl ? '사용량이 보장 수명(' + comma(S.applLife) + '타)에 도달하는 <b>' + R.firstRepl + '개월차</b>에 한 번에 지출되는 것으로 반영했습니다.' : '120개월 안에는 보장 수명에 도달하지 않아 반영되지 않았습니다.'),
+    rev: '<b>무엇인가요?</b> 한 달 동안 시행하는 치료를 금액으로 바꾼 매출입니다. (한 달 치료 건수 × 회당 치료비)'
+      + (pat ? '<br>지금 입력 기준: 월 ' + comma(R.sessions[st]) + '건 → <b>' + won(R.revenue[st]) + '</b>' : '')
+      + '<br>환자 수가 매달 같게 유지되는 안정기(' + st + '개월차 이후)를 가정한 금액입니다. 병원에 들어오는 돈(실제 수납액)과는 받는 시점이 다를 수 있습니다.'
+      + (gap ? '<div class="gapx"><b>매출과 수납액의 차이</b><br>' + gap + '</div>' : ''),
+    after: '<b>무엇인가요?</b> 한 달 매출에서 치료할 때마다 드는 비용과 매달 드는 운영비를 뺀 뒤 남는 금액입니다.'
+      + (pat ? '<br>' + won(R.revenue[st]) + ' (월 예상 시술 매출) − ' + won(sv) + ' (치료 변동비) − ' + won(fixed) + ' (추가 운영비) = <b>' + won(R.afterFixed[st]) + '</b>' : '')
+      + '<br>세금·장비 감가상각 등은 반영하지 않았기 때문에 <b>순이익이 아닙니다.</b> 환자 수가 일정하게 유지되는 안정기(' + st + '개월차 이후) 기준입니다.',
+    sess: '<b>무엇인가요?</b> 한 달 동안 병원에서 시행하는 치료의 전체 횟수입니다. 이번 달 새로 시작한 환자의 치료와, 이전 달에 시작해 치료를 이어가는 환자의 치료를 모두 합친 값입니다.'
+      + (pat ? '<br>안정기(' + st + '개월차 이후) 기준 월 <b>' + comma(R.sessions[st]) + '건</b>' : ''),
+    pat: '<b>무엇인가요?</b> 선택한 치료 모델별 월 신규 환자 수를 <b>단순히 더한 값</b>입니다. 한 환자가 두 가지 모델을 모두 받으면 2명으로 계산됩니다.'
+      + (lst.length ? '<br>' + lst.join(' · ') : ''),
+    prog: '<b>무엇인가요?</b> 그 달에 새로 시작하는 환자들이 정해진 치료 횟수를 모두 받을 때의 총 치료비입니다.'
+      + '<br>계약(약속)한 금액이고, 그 달에 병원이 받는 돈이 아닙니다. 치료는 여러 주에 걸쳐 시행되기 때문입니다.',
+    col: '<b>무엇인가요?</b> 그 달에 병원에 실제로 들어오는 치료비입니다. 선택하신 결제 방식(<b>' + esc(PAY_LABEL[S.payMode]) + '</b>)에 따라 들어오는 시점이 정해집니다.'
+      + '<br>환자 수가 매달 같게 유지되면 안정기(' + st + '개월차 이후)에는 월 예상 시술 매출과 같아집니다.'
+      + (gap ? '<div class="gapx"><b>매출과 수납액의 차이</b><br>' + gap + '</div>' : ''),
+    contrib: '<b>무엇인가요?</b> 월 예상 시술 매출에서 치료할 때마다 드는 비용(어플리케이터 교체비 상당액·회당 추가 변동비)만 뺀 금액입니다. 매달 고정으로 드는 운영비를 빼기 전 금액입니다.'
+      + (pat ? '<br>' + won(R.revenue[st]) + ' − ' + won(sv) + ' = <b>' + won(R.contrib[st]) + '</b>' : ''),
+    var: '<b>어플리케이터 교체비 상당액</b>: 교체비 ' + won(S.applPrice) + ' ÷ 보장 수명 ' + comma(S.applLife) + '타 = 타당 ' + (+R.applCost.toFixed(2)) + '원을, 시행한 타수만큼 미리 비용으로 나누어 반영한 금액입니다.'
+      + (pat ? ' (월 ' + won(R.accrual[st]) + ')' : '')
+      + '<br><b>회당 추가 변동비</b>: 치료 1회마다 드는 소모품 등 비용 (입력값 ' + comma(S.varSess) + '원' + (pat ? ', 월 ' + won(R.extraVar[st]) : '') + ')'
+      + '<br>실제 교체비는 사용량이 보장 수명에 도달할 때 한 번에 지출되며, 투자금 회수기간에는 그 시점으로 반영됩니다.',
+    fixed: '<b>무엇인가요?</b> 치료를 몇 건 하든 매달 똑같이 드는 비용입니다. 월 인건비 ' + won(S.labor * 1e4) + ' + 월 유지관리비 ' + won(S.maint * 1e4) + ' = <b>' + won(fixed) + '</b> (STEP 3에서 입력한 값)',
+  };
+  Object.keys(T).forEach(k => { const e = $('tip-' + k); if (e) e.innerHTML = T[k]; });
+  $('gapBox').innerHTML = gap ? '<b>시술 매출과 실제 수납액, 왜 다를까요?</b><br>' + gap : '';
+  $('gapBox').hidden = !gap;
+}
 
 /* ── 역산 ── */
 function splitInt(split, total) {          // 합이 total 이 되도록 최대잔여법으로 정수 분배
@@ -378,6 +442,16 @@ function bind() {
   });
   $('labor').addEventListener('input', render); $('maint').addEventListener('input', render);
 
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.info'); if (!b) return;
+    const t = $('tip-' + b.dataset.tip); if (!t) return;
+    const open = t.hidden; t.hidden = !open;
+    b.setAttribute('aria-expanded', open ? 'true' : 'false'); b.classList.toggle('on', open);
+  });
+  let printState = null;
+  window.addEventListener('beforeprint', () => { const d = $('detail'); printState = d.open; d.open = true; });
+  window.addEventListener('afterprint', () => { if (printState !== null) $('detail').open = printState; printState = null; });
+
   const M = $('models');
   M.addEventListener('input', e => {
     const row = e.target.closest('.mrow'); if (!row) return;
@@ -492,7 +566,7 @@ function buildSummary(url) {
   else {
     L.push(...act, '');
     L.push('투자금 회수기간: ' + (R.payback == null ? '120개월 내 회수 어려움' : mon(R.payback)));
-    L.push('안정기 월 시술 매출: ' + won(R.revenue[st]), '안정기 월 실제 수납액: ' + won(R.collect[st]), '운영 후 월 공헌이익: ' + won(R.afterFixed[st]));
+    L.push('월 예상 시술 매출: ' + won(R.revenue[st]), '월 실제 수납액: ' + won(R.collect[st]), '월 예상 운영 잉여: ' + won(R.afterFixed[st]));
     const rv = C.reverseMix(cfgOf(S), T);
     if (rv.ok) L.push('목표 ' + T + '개월 회수에 필요한 월 신규 환자: ' + comma(rv.total) + '명');
   }
