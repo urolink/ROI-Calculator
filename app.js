@@ -3,7 +3,7 @@
    데이터 = models.js / 계산 = calc.js / 이 파일 = 입력·그래프·저장·출력 (계산식은 여기 두지 말 것)
    섹션: 상수 → 유틸 → 상태 → 그리기 → 입력 → 저장·공유 → 초기화
    ══════════════════════════════════════════════════════════════ */
-const APP_VERSION = '20261120l';
+const APP_VERSION = '20261120m';
 const C = AriesCalc, D = ARIES2;
 const TARGETS = [12, 18, 24, 36, 48];
 const SAVE_KEY = 'urolink_aries2_roi_saved_v3';

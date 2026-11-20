@@ -17,7 +17,7 @@ button{font-family:inherit}
 
 /* ── 상단바 ── */
 .top{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--border)}
-.top-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.top-in{max-width:1560px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .brand{font-size:20px;font-weight:800;letter-spacing:-.6px;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .wm-a{color:var(--ci-dark)}.wm-b{color:var(--ci-blue)}
 .brand-sub{font-size:12px;font-weight:600;color:#94a3b8;letter-spacing:0}
@@ -27,12 +27,12 @@ button{font-family:inherit}
 .btn-ghost:active{background:#f1f5f9}
 
 /* ── 레이아웃 ── */
-.wrap{max-width:1180px;margin:0 auto;padding:14px 16px 24px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
+.wrap{max-width:1560px;margin:0 auto;padding:14px 16px 24px;display:grid;grid-template-columns:minmax(0,1fr);gap:14px}
 .col-in,.col-out{min-width:0}
 .btn-ghost{white-space:nowrap}
 @media(max-width:420px){.btn-ghost i{display:none}.brand-sub{display:block;width:100%}}
 @media(min-width:900px){
-  .wrap{grid-template-columns:400px minmax(0,1fr)!important;gap:20px;padding-top:20px;align-items:start}
+  .wrap{grid-template-columns:440px minmax(0,1fr)!important;gap:20px;padding-top:20px;align-items:start}
   .col-in{position:sticky;top:64px;max-height:calc(100vh - 80px);overflow-y:auto;padding-right:4px}
   .mbar{display:none!important}
   body{padding-bottom:24px}
@@ -217,3 +217,12 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;bac
 .mdet-in .g2 .fld{margin-bottom:8px}
 .m-del{margin-left:6px}
 .btn-clear{width:100%;height:38px;margin-top:8px;border:1px solid #fecaca;background:#fff;color:#b91c1c;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer}
+
+/* ══ 넓은 화면(PC): 폭을 더 쓰고 그래프 두 개를 나란히 ══ */
+@media(min-width:1200px){
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .two .card{margin-bottom:12px}
+  .wrap{gap:28px}
+}
+@media(min-width:1500px){.kpis{grid-template-columns:repeat(3,1fr);gap:12px}}
+@media print{.two{display:block}}
