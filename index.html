@@ -8,13 +8,12 @@
 <title>Aries 2 ROI 계산기</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230B1220'/%3E%3Cpath d='M50 26v48M26 50h48' stroke='%2342A5F5' stroke-width='13' stroke-linecap='round'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link href="app.css?v=20261120h" rel="stylesheet">
+<link href="app.css?v=20261120i" rel="stylesheet">
 </head>
 <body>
 
 <div id="update-bar"><span>새 버전이 있습니다</span><button onclick="applyUpdate()">새로고침</button></div>
 <div id="toast"></div>
-<input type="file" id="jsonFile" accept=".json,application/json" hidden>
 
 <header class="top">
   <div class="top-in">
@@ -91,12 +90,13 @@
       <button class="btn-line" onclick="resetInputs()">↺ 초기화</button>
     </div>
     <div class="row-btn">
-      <button class="btn-line" onclick="exportJson()">⬇ JSON 내보내기</button>
-      <button class="btn-line" onclick="document.getElementById('jsonFile').click()">⬆ JSON 불러오기</button>
+      <button class="btn-line" onclick="shareResult()">📤 공유하기</button>
+      <button class="btn-line" onclick="copySummary()">📋 결과 요약 복사</button>
     </div>
     <div class="card" id="savedCard" hidden>
       <div class="st">저장한 상담 <em>(이 기기에만 저장)</em></div>
       <div id="savedList"></div>
+      <button class="btn-clear" onclick="clearSaved()">저장 목록 모두 삭제</button>
     </div>
   </section>
 
@@ -190,8 +190,8 @@
   <div class="mgo">결과 보기 ▾</div>
 </div>
 
-<script src="models.js?v=20261120h"></script>
-<script src="calc.js?v=20261120h"></script>
-<script src="app.js?v=20261120h"></script>
+<script src="models.js?v=20261120i"></script>
+<script src="calc.js?v=20261120i"></script>
+<script src="app.js?v=20261120i"></script>
 </body>
 </html>

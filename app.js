@@ -3,7 +3,7 @@
    데이터 = models.js / 계산 = calc.js / 이 파일 = 입력·그래프·저장·출력 (계산식은 여기 두지 말 것)
    섹션: 상수 → 유틸 → 상태 → 그리기 → 입력 → 저장·공유 → 초기화
    ══════════════════════════════════════════════════════════════ */
-const APP_VERSION = '20261120h';
+const APP_VERSION = '20261120i';
 const C = AriesCalc, D = ARIES2;
 const TARGETS = [12, 18, 24, 36, 48];
 const SAVE_KEY = 'urolink_aries2_roi_saved_v3';
@@ -152,7 +152,6 @@ function render() {
     + '<li>회수기간은 <b>월별 누적 현금흐름</b>(수납액 − 변동비 − 고정 운영비 − 교체 현금지출) 기준입니다. 매월 같은 수의 신규 환자가 온다고 가정한 단순 계산입니다.</li>'
     + '<li>장비 공급가·교체비는 <b>VAT 포함</b> 금액 그대로 사용했고, 수가·수납액은 병원 수납 금액 기준입니다(부가세 해당 여부는 반영하지 않음).</li>'
     + '<li>실제 병원 수익을 예측하거나 보장하지 않습니다.</li></ul>';
-  scheduleHash();
 }
 function setKpi(id, text, v) { const e = $(id); e.textContent = text; e.classList.toggle('gr', v > 0); e.classList.toggle('rd', v < 0); }
 function setSeg(id, v) { $(id).querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.v === v)); }
@@ -410,7 +409,6 @@ function bind() {
     else if (b.dataset.a === 'del') { S.models.splice(i, 1); renderModels(); fillSolo(); render(); return; }
     row.querySelector('.m-pat').value = m.pat; row.classList.toggle('on', m.pat > 0); render();
   });
-  $('jsonFile').addEventListener('change', importJson);
 }
 
 /* ══════════════ 저장 · 공유 · JSON ══════════════ */
@@ -455,11 +453,9 @@ function hashToState() {
     return JSON.parse(decodeURIComponent(escape(atob(b))));
   } catch (e) { return null; }
 }
-let hashT;
-function scheduleHash() { clearTimeout(hashT); hashT = setTimeout(() => { try { history.replaceState(null, '', stateToHash()); } catch (e) { } }, 400); }
 function copyLink() {
   readInputs();
-  const url = location.href.split('#')[0] + stateToHash();
+  const url = shareUrl();
   const done = () => toast('링크를 복사했습니다. 입력값이 그대로 담겨 있어요');
   if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(url).then(done, () => prompt('링크를 복사하세요', url));
   else prompt('링크를 복사하세요', url);
@@ -489,29 +485,44 @@ function delScenario(id) {
 function resetInputs() {
   const h = $('hospital').value.trim(); S = freshState(); S.hospital = h; writeInputs(); render(); toast('초기값으로 되돌렸습니다');
 }
-function exportJson() {
+/** 결과 요약 텍스트 — 문자·카톡에 붙여넣기용 */
+function buildSummary(url) {
   readInputs();
-  const doc = { app: 'urolink-aries2-roi', schema: D.schema, version: APP_VERSION, savedAt: new Date().toISOString(), state: S };
-  const blob = new Blob([JSON.stringify(doc, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a'), d = new Date().toISOString().slice(0, 10);
-  a.href = URL.createObjectURL(blob);
-  a.download = 'aries2-roi_' + (S.hospital || '병원').replace(/[\\/:*?"<>|\s]+/g, '_') + '_' + d + '.json';
-  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  toast('JSON 파일로 내보냈습니다');
+  const R = C.simulate(cfgOf(S), 120), st = R.steadyMonth, T = clamp(Math.round(S.target) || 24, 1, 120);
+  const act = S.models.filter(m => m.pat > 0).map(m => '· ' + nameOf(m) + ' 월 ' + m.pat + '명');
+  const L = ['[Aries 2 도입 경제성 분석]', S.hospital ? '병원: ' + S.hospital : null, '장비 공급가 ' + comma(S.invest) + '원(VAT 포함) · ' + PAY_LABEL[S.payMode], ''];
+  if (!act.length) L.push('(치료 모델·월 신규 환자 수를 입력해 주세요)');
+  else {
+    L.push(...act, '');
+    L.push('투자금 회수기간: ' + (R.payback == null ? '120개월 내 회수 어려움' : mon(R.payback)));
+    L.push('안정기 월 시술 매출: ' + won(R.revenue[st]), '안정기 월 실제 수납액: ' + won(R.collect[st]), '운영 후 월 공헌이익: ' + won(R.afterFixed[st]));
+    const rv = C.reverseMix(cfgOf(S), T);
+    if (rv.ok) L.push('목표 ' + T + '개월 회수에 필요한 월 신규 환자: ' + comma(rv.total) + '명');
+  }
+  L.push('', '※ 입력한 가정에 따른 단순 계산이며 실제 수익을 보장하지 않습니다.');
+  if (url) L.push(url);
+  return L.filter(x => x !== null).join('\n');
 }
-function importJson(e) {
-  const f = e.target.files && e.target.files[0]; e.target.value = '';
-  if (!f) return;
-  if (f.size > 1e6) { toast('파일이 너무 큽니다'); return; }
-  const r = new FileReader();
-  r.onload = () => {
-    try {
-      const o = JSON.parse(r.result);
-      if (!o || (o.app && o.app !== 'urolink-aries2-roi')) throw 0;
-      S = sanitize(o.state || o); writeInputs(); render(); toast('불러왔습니다');
-    } catch (err) { toast('올바른 계산 파일이 아닙니다'); }
+function shareUrl() { readInputs(); return location.href.split('#')[0].split('?')[0] + stateToHash(); }
+function copyText(text, okMsg) {
+  const fallback = () => {
+    const t = document.createElement('textarea'); t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+    document.body.appendChild(t); t.select(); let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { }
+    t.remove(); toast(ok ? okMsg : '복사하지 못했습니다. 직접 선택해서 복사해 주세요');
   };
-  r.readAsText(f);
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(() => toast(okMsg), fallback); else fallback();
+}
+function copySummary() { copyText(buildSummary(''), '요약을 복사했습니다. 문자·카톡에 붙여넣으세요'); }
+function shareResult() {
+  const url = shareUrl(), text = buildSummary('');
+  if (navigator.share) navigator.share({ title: 'Aries 2 도입 경제성 분석', text, url }).catch(() => { });
+  else copyText(buildSummary(url), '공유 기능이 없어 요약과 링크를 복사했습니다');
+}
+function clearSaved() {
+  if (!confirm('이 기기에 저장된 상담을 모두 삭제할까요?')) return;
+  try { localStorage.removeItem(SAVE_KEY); } catch (e) { }
+  renderSaved(); toast('저장 목록을 삭제했습니다');
 }
 
 /* ── 새 버전 알림 ── */
@@ -525,6 +536,7 @@ function applyUpdate() { location.href = location.pathname + '?r=' + Date.now() 
 /* ══════════════ 초기화 ══════════════ */
 (function init() {
   S = sanitize(hashToState());
+  try { if (location.hash) history.replaceState(null, '', location.pathname); } catch (e) { }   // 새로고침·재접속 때 이전 입력이 되살아나지 않도록 주소에서 입력값을 지운다
   bind(); writeInputs(); render(); renderSaved();
   checkUpdate();
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkUpdate(); });
