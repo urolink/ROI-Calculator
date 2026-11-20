@@ -87,6 +87,15 @@ const AriesCalc = (function () {
   const clone = (cfg, pats) => Object.assign({}, cfg, { models: cfg.models.map((m, i) => Object.assign({}, m, { pat: pats[i] })) });
   const cumAt = (cfg, pats, T) => simulate(clone(cfg, pats), T).cum[T];
 
+  /** 이분 탐색 결과(hi)를 정수로 바로잡는다. 교체비(덩어리 지출)가 환자 수에 따라 달라져 f 가 단조롭지 않을 수 있으므로,
+   *  hi 근처에서 "실제로 조건을 만족하는 가장 작은 정수"를 찾는다. 못 찾으면 null */
+  function fixInt(f, hi, HI) {
+    let c = Math.max(1, Math.ceil(hi - 1e-6)), g = 0;
+    while (c <= HI && f(c) < 0 && g++ < 300) c++;
+    if (c > HI || f(c) < 0) return null;
+    while (c > 1 && f(c - 1) >= 0) c--;
+    return c;
+  }
   /** 현재 환자 비율 유지: 총 신규 환자 수를 이분 탐색. 환자 미입력이면 확인된 모델 균등 */
   function reverseMix(cfg, T) {
     let w = cfg.models.map(m => (m.pat > 0 ? m.pat : 0));
@@ -98,7 +107,8 @@ const AriesCalc = (function () {
     if (f(HI) < 0) return { ok: false, T };
     let lo = 0, hi = HI;
     for (let i = 0; i < 45; i++) { const mid = (lo + hi) / 2; if (f(mid) >= 0) hi = mid; else lo = mid; }
-    const total = Math.max(1, Math.ceil(hi - 1e-6));
+    const total = fixInt(f, hi, HI);
+    if (total == null) return { ok: false, T };
     return { ok: true, T, total, exact: hi, split: cfg.models.map((m, i) => ({ name: m.name, n: wn[i] * total, w: wn[i] })).filter(x => x.w > 0) };
   }
   /** 특정 모델만 조정: 나머지 모델 환자는 현재 값 고정, idx 모델의 월 환자 수를 탐색 */
@@ -109,7 +119,9 @@ const AriesCalc = (function () {
     if (f(HI) < 0) return { ok: false, T };
     let lo = 0, hi = HI;
     for (let i = 0; i < 45; i++) { const mid = (lo + hi) / 2; if (f(mid) >= 0) hi = mid; else lo = mid; }
-    return { ok: true, T, n: Math.max(0, Math.ceil(hi - 1e-6)), already: f(base[idx]) >= 0 && base[idx] <= hi + 1e-6 };
+    const n = f(0) >= 0 ? 0 : fixInt(f, hi, HI);
+    if (n == null) return { ok: false, T };
+    return { ok: true, T, n };
   }
 
   return { DAYS, feeOf, stepOf, sessionFee, programFee, applCostPerShot, spanMonths, simulate, reverseMix, reverseSolo };

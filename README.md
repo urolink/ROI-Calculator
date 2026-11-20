@@ -9,7 +9,7 @@
 | `models.js` | **데이터** — 확인된 공급 조건, 프로토콜 17종(타수·횟수·간격·Level·Hz·근거·경고) |
 | `calc.js` | **계산 엔진** — DOM 없는 순수 함수. 월별 시뮬레이션·목표 회수 역산 |
 | `app.js` | **화면** — 입력·그래프·저장·JSON·출력 (계산식 두지 말 것) |
-| `calc.test.js` | 엔진 검증. `node calc.test.js` → ALL PASS 확인 |
+| `calc.test.js` · `calc.fuzz.js` | 엔진 검증. `node calc.test.js`(ALL PASS) · `node calc.fuzz.js`(무작위 3000회 불변식; 교체비 덩어리 지출 때문에 회수 시점이 0.05개월 늦어지는 1건 안팎은 정상) |
 | `version.json` | 새 버전 알림 |
 
 ## 용어 (섞어 쓰지 말 것)
