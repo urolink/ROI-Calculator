@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0B1220">
+<title>Aries 2 ROI 계산기</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230B1220'/%3E%3Cpath d='M50 26v48M26 50h48' stroke='%2342A5F5' stroke-width='13' stroke-linecap='round'/%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="app.css?v=20261120h" rel="stylesheet">
+</head>
+<body>
+
+<div id="update-bar"><span>새 버전이 있습니다</span><button onclick="applyUpdate()">새로고침</button></div>
+<div id="toast"></div>
+<input type="file" id="jsonFile" accept=".json,application/json" hidden>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand"><span class="wm-a">Uro</span><span class="wm-b">LinK</span>
+      <span class="brand-sub">Aries 2 ROI 계산기</span></div>
+    <div class="top-act">
+      <button class="btn-ghost" onclick="copyLink()">링크 복사</button>
+      <button class="btn-ghost" onclick="window.print()">PDF·인쇄</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ══════ 입력 ══════ -->
+  <section class="col-in" id="inputs">
+
+    <div class="card">
+      <div class="st">병원</div>
+      <label class="fld"><span>병원명 <em>(보고서에 표시)</em></span>
+        <input id="hospital" type="text" placeholder="예) OO산부인과의원" autocomplete="off"></label>
+    </div>
+
+    <div class="card">
+      <div class="st">STEP 1. 치료 모델 · 월 신규 환자</div>
+      <div class="hint">Aries 2 프로토콜 자료 기준입니다. 모델의 월 신규 환자 수를 올리면 선택되고, 0명이면 계산에서 빠집니다. 타수·횟수·간격은 자료에 범위로 적힌 항목만 범위 안에서 조정됩니다.</div>
+      <div class="seg" id="mTabs" style="margin-bottom:10px">
+        <button type="button" data-v="ob">산부인과 <i id="cntOb"></i></button>
+        <button type="button" data-v="uro">비뇨기과 (참고) <i id="cntUro"></i></button>
+      </div>
+      <div id="models"></div>
+      <button class="btn-add" onclick="addModel()">＋ 치료 모델 직접 추가</button>
+    </div>
+
+    <div class="card">
+      <div class="st">STEP 2. 수가 · 결제 방식</div>
+      <div class="fld"><span>타당 수가 가정 <u>원</u> <em>(확정 수가 아님 · 검토 기준 60~80원)</em></span>
+        <div class="chips" id="feeChips"></div>
+        <input id="fee" type="text" inputmode="decimal" data-num></div>
+      <div class="fld"><span>결제 방식 <em>(수납 시점 가정)</em></span>
+        <div class="seg" id="payMode">
+          <button type="button" data-v="prepaid">선결제</button>
+          <button type="button" data-v="session">회차별</button>
+          <button type="button" data-v="installment">분할</button>
+        </div></div>
+      <div id="instBox" class="sub" hidden>
+        <label class="fld"><span>분할 횟수 <u>회</u> <em>(첫 방문 달부터 매월 균등 · 가정)</em></span><input id="inst" type="text" inputmode="numeric" data-num></label>
+      </div>
+      <div class="hint" id="payHint"></div>
+    </div>
+
+    <div class="card">
+      <div class="st">STEP 3. 추가 운영비</div>
+      <div class="fld"><span class="sl"><span>월 인건비 <em>(고정 운영비)</em></span><b id="laborV"></b></span>
+        <input id="labor" type="range" min="0" max="500" step="5"></div>
+      <div class="fld"><span class="sl"><span>월 유지관리비 <em>(고정 운영비)</em></span><b id="maintV"></b></span>
+        <input id="maint" type="range" min="0" max="300" step="5"></div>
+      <label class="fld"><span>시술 1회당 추가 변동비 <u>원</u> <em>(회당 소모품 등 · 없으면 0)</em></span><input id="varSess" type="text" inputmode="numeric" data-num></label>
+    </div>
+
+    <div class="card">
+      <div class="st">확인된 조건 <em>(제안서 기준 · VAT 포함)</em></div>
+      <div class="g2">
+        <label class="fld"><span>장비 공급가 <u>원</u></span><input id="invest" type="text" inputmode="numeric" data-num></label>
+        <label class="fld"><span>어플리케이터 교체비 <u>원</u></span><input id="applPrice" type="text" inputmode="numeric" data-num></label>
+        <label class="fld"><span>보장 수명 <u>타</u></span><input id="applLife" type="text" inputmode="numeric" data-num></label>
+        <div class="fld"><span>타당 교체비 상당액</span><div class="ro" id="applCost"></div></div>
+      </div>
+      <div class="hint">교체비 상당액 = 교체비 ÷ 보장 수명(손익 계산용 적립). 실제 현금은 보장 수명을 소진해 교체하는 달에 한꺼번에 나갑니다.</div>
+    </div>
+
+    <div class="row-btn">
+      <button class="btn-line" onclick="saveScenario()">💾 브라우저에 저장</button>
+      <button class="btn-line" onclick="resetInputs()">↺ 초기화</button>
+    </div>
+    <div class="row-btn">
+      <button class="btn-line" onclick="exportJson()">⬇ JSON 내보내기</button>
+      <button class="btn-line" onclick="document.getElementById('jsonFile').click()">⬆ JSON 불러오기</button>
+    </div>
+    <div class="card" id="savedCard" hidden>
+      <div class="st">저장한 상담 <em>(이 기기에만 저장)</em></div>
+      <div id="savedList"></div>
+    </div>
+  </section>
+
+  <!-- ══════ 결과 ══════ -->
+  <section class="col-out" id="report">
+
+    <div class="rep-head">
+      <div class="rep-kick">DORNIER ARIES 2 · INVESTMENT ANALYSIS</div>
+      <div class="rep-t" id="repTitle">Aries 2 도입 경제성 분석</div>
+      <div class="rep-s" id="repSub"></div>
+    </div>
+
+    <div id="warn" class="warn" hidden></div>
+
+    <div class="hero">
+      <div class="hero-l">초기 투자금 회수기간 <small>(월별 누적 현금흐름 기준)</small></div>
+      <div class="hero-v" id="rPayback">-</div>
+      <div class="hero-s" id="rPaybackSub"></div>
+      <div class="goal" id="rGoal"></div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="l">월 신규 환자</div><b id="rPat">-</b></div>
+      <div class="kpi"><div class="l">월 신규 프로그램 계약 총액 <small>(계약 기준)</small></div><b id="rProg">-</b></div>
+      <div class="kpi"><div class="l">안정기 월 치료 건수</div><b id="rSess">-</b></div>
+      <div class="kpi"><div class="l">안정기 월 시술 매출 <small>(치료 시점)</small></div><b id="rRev">-</b></div>
+      <div class="kpi"><div class="l">안정기 월 실제 수납액 <small>(현금)</small></div><b id="rCol">-</b></div>
+      <div class="kpi"><div class="l">교체비 상당액 · 변동비 <small>(월)</small></div><b id="rVar">-</b></div>
+      <div class="kpi"><div class="l">안정기 월 공헌이익 <small>(변동비 차감)</small></div><b id="rContrib">-</b></div>
+      <div class="kpi"><div class="l">고정 운영비 <small>(월)</small></div><b id="rFixed">-</b></div>
+      <div class="kpi hi"><div class="l">운영 후 월 공헌이익 <small>(고정비 차감)</small></div><b id="rAfter">-</b></div>
+    </div>
+    <div class="fine" id="steadyNote" style="margin-top:-4px"></div>
+
+    <!-- 역산 -->
+    <div class="card rev-card" id="revCard">
+      <div class="st">🎯 목표 회수기간 → 필요 월 신규 환자</div>
+      <div class="fld"><span>목표 회수기간 <u>개월</u></span>
+        <div class="chips" id="tgtChips"></div>
+        <input id="target" type="text" inputmode="numeric" data-num></div>
+      <div class="fld"><span>계산 방식</span>
+        <div class="seg" id="revMode">
+          <button type="button" data-v="mix">현재 환자 비율 유지</button>
+          <button type="button" data-v="solo">특정 모델만 조정</button>
+        </div>
+        <select id="soloSel" class="sel" hidden></select></div>
+      <div class="rev-out">
+        <div class="rev-l" id="revL"></div>
+        <div class="rev-v" id="revV">-</div>
+        <div class="rev-s" id="revS"></div>
+      </div>
+      <div class="tbl-wrap"><table class="tbl" id="revTbl"></table></div>
+    </div>
+
+    <div class="card">
+      <div class="st">월별 매출 · 현금흐름 <em>(처음 36개월)</em></div>
+      <div id="chartMon"></div>
+      <div class="legend"><span class="lg" style="background:#0e7490"></span>시술 매출<span class="lg" style="background:#8b5cf6"></span>실제 수납액<span class="lg" style="background:#ea580c"></span>월 현금흐름</div>
+    </div>
+
+    <div class="card">
+      <div class="st">누적 투자금 회수 <em>(0원 선을 넘으면 회수)</em></div>
+      <div id="chartCum"></div>
+      <div class="legend"><span class="lg" style="background:#0e7490"></span>누적 현금흐름<span class="lg" style="background:#ea580c"></span>회수 시점<span class="lg" style="background:#dc2626"></span>어플리케이터 교체 지출<span class="lg" style="background:#16a34a"></span>목표 기간</div>
+    </div>
+
+    <div class="card">
+      <div class="st">모델별 수익 기여도 <em>(처음 36개월 합계)</em></div>
+      <div id="share"></div>
+      <div class="tbl-wrap"><table class="tbl" id="perTbl"></table></div>
+    </div>
+
+    <div class="card">
+      <div class="st">월별 상세</div>
+      <div class="tbl-wrap"><table class="tbl" id="monTbl"></table></div>
+    </div>
+
+    <div class="card">
+      <div class="st">분석 조건</div>
+      <div id="assump"></div>
+    </div>
+
+    <div class="fine" id="fine"></div>
+    <div class="foot">UroLink · 본 자료는 입력하신 가정에 따른 단순 계산이며 실제 병원 수익을 예측하거나 보장하지 않습니다.</div>
+  </section>
+</main>
+
+<div class="mbar" onclick="document.getElementById('report').scrollIntoView({behavior:'smooth'})">
+  <div><small>회수기간</small><b id="mbPay">-</b></div>
+  <div><small>운영 후 월 공헌이익</small><b id="mbMon">-</b></div>
+  <div class="mgo">결과 보기 ▾</div>
+</div>
+
+<script src="models.js?v=20261120h"></script>
+<script src="calc.js?v=20261120h"></script>
+<script src="app.js?v=20261120h"></script>
+</body>
+</html>
