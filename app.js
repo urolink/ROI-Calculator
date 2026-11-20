@@ -3,7 +3,7 @@
    데이터 = models.js / 계산 = calc.js / 이 파일 = 입력·그래프·저장·출력 (계산식은 여기 두지 말 것)
    섹션: 상수 → 유틸 → 상태 → 그리기 → 입력 → 저장·공유 → 초기화
    ══════════════════════════════════════════════════════════════ */
-const APP_VERSION = '20261120n';
+const APP_VERSION = '20261120o';
 const C = AriesCalc, D = ARIES2;
 const TARGETS = [12, 18, 24, 36, 48];
 const SAVE_KEY = 'urolink_aries2_roi_saved_v3';
@@ -443,7 +443,7 @@ function bind() {
   $('labor').addEventListener('input', render); $('maint').addEventListener('input', render);
 
   document.addEventListener('click', e => {
-    const b = e.target.closest('.info'); if (!b) return;
+    const b = e.target.closest('button.info'); if (!b) return;
     const t = $('tip-' + b.dataset.tip); if (!t) return;
     const open = t.hidden; t.hidden = !open;
     b.setAttribute('aria-expanded', open ? 'true' : 'false'); b.classList.toggle('on', open);
